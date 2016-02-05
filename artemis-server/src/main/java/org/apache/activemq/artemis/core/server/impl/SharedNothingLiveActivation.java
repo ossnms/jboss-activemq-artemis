@@ -114,6 +114,7 @@ public class SharedNothingLiveActivation extends LiveActivation {
       }
       catch (Exception e) {
          ActiveMQServerLogger.LOGGER.initializationError(e);
+         activeMQServer.callActivationFailureListeners(e);
       }
    }
 
