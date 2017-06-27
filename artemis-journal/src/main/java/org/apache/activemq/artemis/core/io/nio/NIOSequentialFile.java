@@ -17,6 +17,7 @@
 package org.apache.activemq.artemis.core.io.nio;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -51,6 +52,8 @@ public class NIOSequentialFile extends AbstractSequentialFile {
       Instead of reading the whole content in a single operation, this will read in smaller chunks.
     */
    private static final int CHUNK_SIZE = 2 * 1024 * 1024;
+
+   private static final int MAX_CREATE_FILE_RETRIES = 5;
 
    private FileChannel channel;
 
@@ -94,7 +97,7 @@ public class NIOSequentialFile extends AbstractSequentialFile {
    @Override
    public void open(final int maxIO, final boolean useExecutor) throws IOException {
       try {
-         rfile = new RandomAccessFile(getFile(), "rw");
+         rfile = newRandomAccessFile(getFile(), "rw");
 
          channel = rfile.getChannel();
 
@@ -439,6 +442,47 @@ public class NIOSequentialFile extends AbstractSequentialFile {
                super.flushBuffer(byteBuf, requestedSync, callbacks);
             }
          }
+      }
+   }
+
+   private static RandomAccessFile newRandomAccessFile(File file, String mode) throws FileNotFoundException {
+      for (int attempt = 1; attempt < MAX_CREATE_FILE_RETRIES; ++attempt) {
+         try {
+            return new RandomAccessFile(file, mode);
+         } catch (FileNotFoundException exception) {
+            String msg = exception.getMessage();
+
+            if (msg == null || !msg.contains("The process cannot access the file because it is being used by another process")) {
+               throw exception;
+            }
+
+            ActiveMQJournalLogger.LOGGER.warn("NIOSequentialFile couldn't open \"" + file + "\" in attempt #" + attempt);
+         }
+
+         switch (attempt) {
+            case 1:
+               Thread.yield();
+               break;
+            case 2:
+               threadSleep(1);
+               break;
+            case 3:
+               threadSleep(10);
+               break;
+            default:
+               threadSleep(100);
+               break;
+         }
+      }
+
+      return new RandomAccessFile(file, mode);
+   }
+
+   private static void threadSleep(long ms) {
+      try {
+         Thread.sleep(ms);
+      } catch (InterruptedException ex) {
+         Thread.currentThread().interrupt();
       }
    }
 }
