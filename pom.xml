@@ -947,6 +947,7 @@
             <executions>
                <execution>
                   <phase>verify</phase>
+				  <id>attach-sources</id>
                   <goals>
                      <goal>jar</goal>
                   </goals>
