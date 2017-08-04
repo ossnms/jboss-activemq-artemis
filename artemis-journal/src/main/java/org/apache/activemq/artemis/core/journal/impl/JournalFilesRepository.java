@@ -93,6 +93,7 @@ public class JournalFilesRepository {
          }
       }
    };
+   private int openFileTimeoutSeconds;
 
    public JournalFilesRepository(final SequentialFileFactory fileFactory,
                                  final JournalImpl journal,
@@ -112,6 +113,8 @@ public class JournalFilesRepository {
       if (maxAIO <= 0) {
          throw new IllegalArgumentException("maxAIO must be a positive number");
       }
+
+      this.openFileTimeoutSeconds = Integer.getInteger(JournalFilesRepository.class.getName() + ".openFileTimeoutSeconds", 5);
       this.fileFactory = fileFactory;
       this.maxAIO = maxAIO;
       this.filePrefix = filePrefix;
@@ -424,7 +427,8 @@ public class JournalFilesRepository {
          openFilesExecutor.execute(pushOpenRunnable);
       }
 
-      JournalFile nextFile = openedFiles.poll(5, TimeUnit.SECONDS);
+
+      JournalFile nextFile = openedFiles.poll(openFileTimeoutSeconds, TimeUnit.SECONDS);
       if (nextFile == null) {
          fileFactory.onIOError(ActiveMQJournalBundle.BUNDLE.fileNotOpened(), "unable to open ", null);
          // We need to reconnect the current file with the timed buffer as we were not able to roll the file forward
