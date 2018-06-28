@@ -89,20 +89,20 @@ public class ActiveMQRAMessageProducer implements MessageProducer {
                     final int deliveryMode,
                     final int priority,
                     final long timeToLive) throws JMSException {
-      session.lock();
-      try {
+
+      session.supplyLocked(() -> {
          if (ActiveMQRALogger.LOGGER.isTraceEnabled()) {
             ActiveMQRALogger.LOGGER.trace("send " + this +
-                                             " destination=" +
-                                             destination +
-                                             " message=" +
-                                             message +
-                                             " deliveryMode=" +
-                                             deliveryMode +
-                                             " priority=" +
-                                             priority +
-                                             " ttl=" +
-                                             timeToLive);
+                    " destination=" +
+                    destination +
+                    " message=" +
+                    message +
+                    " deliveryMode=" +
+                    deliveryMode +
+                    " priority=" +
+                    priority +
+                    " ttl=" +
+                    timeToLive);
          }
 
          checkState();
@@ -112,9 +112,8 @@ public class ActiveMQRAMessageProducer implements MessageProducer {
          if (ActiveMQRALogger.LOGGER.isTraceEnabled()) {
             ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
          }
-      } finally {
-         session.unlock();
-      }
+         return null;
+      });
    }
 
    /**
@@ -126,8 +125,7 @@ public class ActiveMQRAMessageProducer implements MessageProducer {
     */
    @Override
    public void send(final Destination destination, final Message message) throws JMSException {
-      session.lock();
-      try {
+      session.supplyLocked(() -> {
          if (ActiveMQRALogger.LOGGER.isTraceEnabled()) {
             ActiveMQRALogger.LOGGER.trace("send " + this + " destination=" + destination + " message=" + message);
          }
@@ -139,9 +137,8 @@ public class ActiveMQRAMessageProducer implements MessageProducer {
          if (ActiveMQRALogger.LOGGER.isTraceEnabled()) {
             ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
          }
-      } finally {
-         session.unlock();
-      }
+         return null;
+      });
    }
 
    /**
@@ -158,18 +155,18 @@ public class ActiveMQRAMessageProducer implements MessageProducer {
                     final int deliveryMode,
                     final int priority,
                     final long timeToLive) throws JMSException {
-      session.lock();
-      try {
+
+      session.supplyLocked(() -> {
          if (ActiveMQRALogger.LOGGER.isTraceEnabled()) {
             ActiveMQRALogger.LOGGER.trace("send " + this +
-                                             " message=" +
-                                             message +
-                                             " deliveryMode=" +
-                                             deliveryMode +
-                                             " priority=" +
-                                             priority +
-                                             " ttl=" +
-                                             timeToLive);
+                    " message=" +
+                    message +
+                    " deliveryMode=" +
+                    deliveryMode +
+                    " priority=" +
+                    priority +
+                    " ttl=" +
+                    timeToLive);
          }
 
          checkState();
@@ -179,9 +176,8 @@ public class ActiveMQRAMessageProducer implements MessageProducer {
          if (ActiveMQRALogger.LOGGER.isTraceEnabled()) {
             ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
          }
-      } finally {
-         session.unlock();
-      }
+         return null;
+      });
    }
 
    /**
@@ -192,8 +188,8 @@ public class ActiveMQRAMessageProducer implements MessageProducer {
     */
    @Override
    public void send(final Message message) throws JMSException {
-      session.lock();
-      try {
+
+      session.supplyLocked(() -> {
          if (ActiveMQRALogger.LOGGER.isTraceEnabled()) {
             ActiveMQRALogger.LOGGER.trace("send " + this + " message=" + message);
          }
@@ -205,9 +201,8 @@ public class ActiveMQRAMessageProducer implements MessageProducer {
          if (ActiveMQRALogger.LOGGER.isTraceEnabled()) {
             ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
          }
-      } finally {
-         session.unlock();
-      }
+         return null;
+      });
    }
 
    /**
