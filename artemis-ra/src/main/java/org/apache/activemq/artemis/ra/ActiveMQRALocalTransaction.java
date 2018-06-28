@@ -71,19 +71,17 @@ public class ActiveMQRALocalTransaction implements LocalTransaction {
          ActiveMQRALogger.LOGGER.trace("commit()");
       }
 
-      mc.lock();
-      try {
-         if (mc.getSession().getTransacted()) {
-            mc.getSession().commit();
+      mc.supplyLocked(() -> {
+         try {
+            if (mc.getSession().getTransacted()) {
+               mc.getSession().commit();
+            }
+            return null;
          }
-      }
-      catch (JMSException e) {
-         throw new ResourceException("Could not commit LocalTransaction", e);
-      }
-      finally {
-         //mc.setInManagedTx(false);
-         mc.unlock();
-      }
+         catch (JMSException e) {
+            throw new ResourceException("Could not commit LocalTransaction", e);
+         }
+      });
    }
 
    /**
@@ -96,18 +94,16 @@ public class ActiveMQRALocalTransaction implements LocalTransaction {
          ActiveMQRALogger.LOGGER.trace("rollback()");
       }
 
-      mc.lock();
-      try {
-         if (mc.getSession().getTransacted()) {
-            mc.getSession().rollback();
+      mc.supplyLocked(() -> {
+         try {
+            if (mc.getSession().getTransacted()) {
+               mc.getSession().rollback();
+            }
+            return null;
          }
-      }
-      catch (JMSException ex) {
-         throw new ResourceException("Could not rollback LocalTransaction", ex);
-      }
-      finally {
-         //mc.setInManagedTx(false);
-         mc.unlock();
-      }
+         catch (JMSException ex) {
+            throw new ResourceException("Could not rollback LocalTransaction", ex);
+         }
+      });
    }
 }

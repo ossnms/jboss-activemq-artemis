@@ -16,6 +16,14 @@
  */
 package org.apache.activemq.artemis.ra;
 
+import org.apache.activemq.artemis.core.client.impl.ClientSessionInternal;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnection;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.apache.activemq.artemis.jms.client.ActiveMQXAConnection;
+import org.apache.activemq.artemis.service.extensions.ServiceUtils;
+import org.apache.activemq.artemis.service.extensions.xa.ActiveMQXAResourceWrapper;
+import org.apache.activemq.artemis.utils.VersionLoader;
+
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.ResourceAllocationException;
@@ -47,14 +55,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.apache.activemq.artemis.core.client.impl.ClientSessionInternal;
-import org.apache.activemq.artemis.jms.client.ActiveMQConnection;
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
-import org.apache.activemq.artemis.jms.client.ActiveMQXAConnection;
-import org.apache.activemq.artemis.service.extensions.ServiceUtils;
-import org.apache.activemq.artemis.service.extensions.xa.ActiveMQXAResourceWrapper;
-import org.apache.activemq.artemis.utils.VersionLoader;
 
 /**
  * The managed connection
@@ -109,7 +109,7 @@ public final class ActiveMQRAManagedConnection implements ManagedConnection, Exc
    /**
     * Lock
     */
-   private ReentrantLock lock = new ReentrantLock();
+   private volatile ReentrantLock lock = new ReentrantLock();
 
    // Physical connection stuff
    private ActiveMQConnectionFactory connectionFactory;
@@ -381,15 +381,42 @@ public final class ActiveMQRAManagedConnection implements ManagedConnection, Exc
       }
    }
 
-   /**
-    * Aqquire a lock on the managed connection
-    */
-   protected void lock() {
+   protected <T, E extends Exception> T supplyLocked(ExceptionalSupplier<T, E> runnable) throws E {
       if (ActiveMQRAManagedConnection.trace) {
          ActiveMQRALogger.LOGGER.trace("lock()");
       }
+      ReentrantLock currentLock = this.lock;
+      currentLock.lock();
+      try {
+         if (currentLock != this.lock) {
+            ActiveMQRALogger.LOGGER.error("Locked already invalid lock. Probably this connection was cleaned up. Exiting");
+            return null;
+         }
 
-      lock.lock();
+         return runnable.get();
+      }finally {
+         currentLock.unlock();
+         if (ActiveMQRAManagedConnection.trace) {
+            ActiveMQRALogger.LOGGER.trace("unlock()");
+         }
+      }
+   }
+
+
+   protected <T, E extends Exception> T trySupplyLocked(ExceptionalSupplier<T, E> runnable) throws E, JMSException {
+      ReentrantLock currentLock = tryLock();
+      try {
+         if (currentLock != this.lock) {
+            ActiveMQRALogger.LOGGER.error("Locked already invalid lock. Probably this connection was cleaned up. Exiting");
+            return null;
+         }
+         return runnable.get();
+      }finally {
+         currentLock.unlock();
+         if (ActiveMQRAManagedConnection.trace) {
+            ActiveMQRALogger.LOGGER.trace("unlock()");
+         }
+      }
    }
 
    /**
@@ -397,35 +424,26 @@ public final class ActiveMQRAManagedConnection implements ManagedConnection, Exc
     *
     * @throws JMSException Thrown if an error occurs
     */
-   protected void tryLock() throws JMSException {
+   private ReentrantLock tryLock() throws JMSException {
       if (ActiveMQRAManagedConnection.trace) {
          ActiveMQRALogger.LOGGER.trace("tryLock()");
       }
 
+      ReentrantLock currentLock = this.lock;
       Integer tryLock = mcf.getUseTryLock();
       if (tryLock == null || tryLock.intValue() <= 0) {
-         lock();
-         return;
+         currentLock.lock();
+         return currentLock;
       }
       try {
-         if (lock.tryLock(tryLock.intValue(), TimeUnit.SECONDS) == false) {
+         if (currentLock.tryLock(tryLock.intValue(), TimeUnit.SECONDS) == false) {
             throw new ResourceAllocationException("Unable to obtain lock in " + tryLock + " seconds: " + this);
          }
       }
       catch (InterruptedException e) {
          throw new ResourceAllocationException("Interrupted attempting lock: " + this);
       }
-   }
-
-   /**
-    * Unlock the managed connection
-    */
-   protected void unlock() {
-      if (ActiveMQRAManagedConnection.trace) {
-         ActiveMQRALogger.LOGGER.trace("unlock()");
-      }
-
-      lock.unlock();
+      return currentLock;
    }
 
    /**

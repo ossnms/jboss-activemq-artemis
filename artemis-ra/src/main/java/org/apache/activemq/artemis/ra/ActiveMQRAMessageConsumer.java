@@ -117,8 +117,7 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
     * @throws JMSException Thrown if an error occurs
     */
    public void setMessageListener(final MessageListener listener) throws JMSException {
-      session.lock();
-      try {
+      session.supplyLocked(() -> {
          checkState();
          session.checkStrict();
          if (listener == null) {
@@ -127,10 +126,8 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
          else {
             consumer.setMessageListener(wrapMessageListener(listener));
          }
-      }
-      finally {
-         session.unlock();
-      }
+         return null;
+      });
    }
 
    /**
@@ -155,8 +152,7 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
     * @throws JMSException Thrown if an error occurs
     */
    public Message receive() throws JMSException {
-      session.lock();
-      try {
+      return session.supplyLocked(() -> {
          if (ActiveMQRAMessageConsumer.trace) {
             ActiveMQRALogger.LOGGER.trace("receive " + this);
          }
@@ -170,14 +166,10 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
 
          if (message == null) {
             return null;
-         }
-         else {
+         } else {
             return wrapMessage(message);
          }
-      }
-      finally {
-         session.unlock();
-      }
+      });
    }
 
    /**
@@ -188,8 +180,7 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
     * @throws JMSException Thrown if an error occurs
     */
    public Message receive(final long timeout) throws JMSException {
-      session.lock();
-      try {
+      return session.supplyLocked(() -> {
          if (ActiveMQRAMessageConsumer.trace) {
             ActiveMQRALogger.LOGGER.trace("receive " + this + " timeout=" + timeout);
          }
@@ -207,10 +198,7 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
          else {
             return wrapMessage(message);
          }
-      }
-      finally {
-         session.unlock();
-      }
+      });
    }
 
    /**
@@ -220,8 +208,8 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
     * @throws JMSException Thrown if an error occurs
     */
    public Message receiveNoWait() throws JMSException {
-      session.lock();
-      try {
+
+      return session.supplyLocked(() -> {
          if (ActiveMQRAMessageConsumer.trace) {
             ActiveMQRALogger.LOGGER.trace("receiveNoWait " + this);
          }
@@ -239,10 +227,7 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
          else {
             return wrapMessage(message);
          }
-      }
-      finally {
-         session.unlock();
-      }
+      });
    }
 
    /**
