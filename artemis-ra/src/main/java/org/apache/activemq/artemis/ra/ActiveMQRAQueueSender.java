@@ -76,20 +76,19 @@ public class ActiveMQRAQueueSender extends ActiveMQRAMessageProducer implements 
                     final int deliveryMode,
                     final int priority,
                     final long timeToLive) throws JMSException {
-      session.lock();
-      try {
+      session.supplyLocked(() -> {
          if (ActiveMQRAQueueSender.trace) {
             ActiveMQRALogger.LOGGER.trace("send " + this +
-                                             " destination=" +
-                                             destination +
-                                             " message=" +
-                                             message +
-                                             " deliveryMode=" +
-                                             deliveryMode +
-                                             " priority=" +
-                                             priority +
-                                             " ttl=" +
-                                             timeToLive);
+                    " destination=" +
+                    destination +
+                    " message=" +
+                    message +
+                    " deliveryMode=" +
+                    deliveryMode +
+                    " priority=" +
+                    priority +
+                    " ttl=" +
+                    timeToLive);
          }
 
          checkState();
@@ -98,9 +97,8 @@ public class ActiveMQRAQueueSender extends ActiveMQRAMessageProducer implements 
          if (ActiveMQRAQueueSender.trace) {
             ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
          }
-      } finally {
-         session.unlock();
-      }
+         return null;
+      });
    }
 
    /**
@@ -112,8 +110,8 @@ public class ActiveMQRAQueueSender extends ActiveMQRAMessageProducer implements 
     */
    @Override
    public void send(final Queue destination, final Message message) throws JMSException {
-      session.lock();
-      try {
+
+      session.supplyLocked(() -> {
          if (ActiveMQRAQueueSender.trace) {
             ActiveMQRALogger.LOGGER.trace("send " + this + " destination=" + destination + " message=" + message);
          }
@@ -124,8 +122,7 @@ public class ActiveMQRAQueueSender extends ActiveMQRAMessageProducer implements 
          if (ActiveMQRAQueueSender.trace) {
             ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
          }
-      } finally {
-         session.unlock();
-      }
+         return null;
+      });
    }
 }
