@@ -118,16 +118,16 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
     */
    public void setMessageListener(final MessageListener listener) throws JMSException {
       session.supplyLocked(() -> {
-         checkState();
-         session.checkStrict();
-         if (listener == null) {
-            consumer.setMessageListener(null);
-         }
-         else {
-            consumer.setMessageListener(wrapMessageListener(listener));
-         }
-         return null;
-      });
+            checkState();
+            session.checkStrict();
+            if (listener == null) {
+               consumer.setMessageListener(null);
+            }
+            else {
+               consumer.setMessageListener(wrapMessageListener(listener));
+            }
+            return null;
+         });
    }
 
    /**
@@ -153,23 +153,24 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
     */
    public Message receive() throws JMSException {
       return session.supplyLocked(() -> {
-         if (ActiveMQRAMessageConsumer.trace) {
-            ActiveMQRALogger.LOGGER.trace("receive " + this);
-         }
+            if (ActiveMQRAMessageConsumer.trace) {
+               ActiveMQRALogger.LOGGER.trace("receive " + this);
+            }
 
-         checkState();
-         Message message = consumer.receive();
+            checkState();
+            Message message = consumer.receive();
 
-         if (ActiveMQRAMessageConsumer.trace) {
-            ActiveMQRALogger.LOGGER.trace("received " + this + " result=" + message);
-         }
+            if (ActiveMQRAMessageConsumer.trace) {
+               ActiveMQRALogger.LOGGER.trace("received " + this + " result=" + message);
+            }
 
-         if (message == null) {
-            return null;
-         } else {
-            return wrapMessage(message);
-         }
-      });
+            if (message == null) {
+               return null;
+            }
+            else {
+               return wrapMessage(message);
+            }
+         });
    }
 
    /**
@@ -181,24 +182,24 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
     */
    public Message receive(final long timeout) throws JMSException {
       return session.supplyLocked(() -> {
-         if (ActiveMQRAMessageConsumer.trace) {
-            ActiveMQRALogger.LOGGER.trace("receive " + this + " timeout=" + timeout);
-         }
+            if (ActiveMQRAMessageConsumer.trace) {
+               ActiveMQRALogger.LOGGER.trace("receive " + this + " timeout=" + timeout);
+            }
 
-         checkState();
-         Message message = consumer.receive(timeout);
+            checkState();
+            Message message = consumer.receive(timeout);
 
-         if (ActiveMQRAMessageConsumer.trace) {
-            ActiveMQRALogger.LOGGER.trace("received " + this + " result=" + message);
-         }
+            if (ActiveMQRAMessageConsumer.trace) {
+               ActiveMQRALogger.LOGGER.trace("received " + this + " result=" + message);
+            }
 
-         if (message == null) {
-            return null;
-         }
-         else {
-            return wrapMessage(message);
-         }
-      });
+            if (message == null) {
+               return null;
+            }
+            else {
+               return wrapMessage(message);
+            }
+         });
    }
 
    /**
@@ -210,24 +211,24 @@ public class ActiveMQRAMessageConsumer implements MessageConsumer {
    public Message receiveNoWait() throws JMSException {
 
       return session.supplyLocked(() -> {
-         if (ActiveMQRAMessageConsumer.trace) {
-            ActiveMQRALogger.LOGGER.trace("receiveNoWait " + this);
-         }
+            if (ActiveMQRAMessageConsumer.trace) {
+               ActiveMQRALogger.LOGGER.trace("receiveNoWait " + this);
+            }
 
-         checkState();
-         Message message = consumer.receiveNoWait();
+            checkState();
+            Message message = consumer.receiveNoWait();
 
-         if (ActiveMQRAMessageConsumer.trace) {
-            ActiveMQRALogger.LOGGER.trace("received " + this + " result=" + message);
-         }
+            if (ActiveMQRAMessageConsumer.trace) {
+               ActiveMQRALogger.LOGGER.trace("received " + this + " result=" + message);
+            }
 
-         if (message == null) {
-            return null;
-         }
-         else {
-            return wrapMessage(message);
-         }
-      });
+            if (message == null) {
+               return null;
+            }
+            else {
+               return wrapMessage(message);
+            }
+         });
    }
 
    /**

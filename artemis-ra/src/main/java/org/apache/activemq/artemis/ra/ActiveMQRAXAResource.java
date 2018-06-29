@@ -73,27 +73,27 @@ public class ActiveMQRAXAResource implements ActiveMQXAResource {
 
 
       managedConnection.supplyLocked(() -> {
-         ClientSessionInternal sessionInternal = (ClientSessionInternal) xaResource;
-         try {
+            ClientSessionInternal sessionInternal = (ClientSessionInternal) xaResource;
             try {
-               //this resets any tx stuff, we assume here that the tm and jca layer are well behaved when it comes to this
-               sessionInternal.resetIfNeeded();
-            }
-            catch (ActiveMQException e) {
-               ActiveMQRALogger.LOGGER.problemResettingXASession(e);
+               try {
+                  //this resets any tx stuff, we assume here that the tm and jca layer are well behaved when it comes to this
+                  sessionInternal.resetIfNeeded();
+               }
+               catch (ActiveMQException e) {
+                  ActiveMQRALogger.LOGGER.problemResettingXASession(e);
 
-               XAException xaException = new XAException(XAException.XAER_RMFAIL);
-               xaException.initCause(e);
-               throw xaException;
-            }
+                  XAException xaException = new XAException(XAException.XAER_RMFAIL);
+                  xaException.initCause(e);
+                  throw xaException;
+               }
 
-            xaResource.start(xid, flags);
-            return null;
-         }
-         finally {
-            managedConnection.setInManagedTx(true);
-         }
-      });
+               xaResource.start(xid, flags);
+               return null;
+            }
+            finally {
+               managedConnection.setInManagedTx(true);
+            }
+         });
    }
 
    /**
@@ -110,14 +110,14 @@ public class ActiveMQRAXAResource implements ActiveMQXAResource {
 
 
       managedConnection.supplyLocked(() -> {
-         try {
-            xaResource.end(xid, flags);
-            return null;
-         }
-         finally {
-            managedConnection.setInManagedTx(false);
-         }
-      });
+            try {
+               xaResource.end(xid, flags);
+               return null;
+            }
+            finally {
+               managedConnection.setInManagedTx(false);
+            }
+         });
    }
 
    /**
@@ -176,15 +176,15 @@ public class ActiveMQRAXAResource implements ActiveMQXAResource {
       }
 
       managedConnection.supplyLocked(() -> {
-         try {
-            xaResource.forget(xid);
-            return null;
-         }
-         finally {
-            managedConnection.setInManagedTx(true);
-            managedConnection.setInManagedTx(false);
-         }
-      });
+            try {
+               xaResource.forget(xid);
+               return null;
+            }
+            finally {
+               managedConnection.setInManagedTx(true);
+               managedConnection.setInManagedTx(false);
+            }
+         });
 
    }
 

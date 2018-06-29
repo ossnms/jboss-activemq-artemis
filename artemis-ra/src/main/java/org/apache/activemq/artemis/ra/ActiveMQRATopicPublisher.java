@@ -74,27 +74,27 @@ public class ActiveMQRATopicPublisher extends ActiveMQRAMessageProducer implemen
                        final long timeToLive) throws JMSException {
 
       session.supplyLocked(() -> {
-         if (ActiveMQRATopicPublisher.trace) {
-            ActiveMQRALogger.LOGGER.trace("send " + this +
-                    " message=" +
-                    message +
-                    " deliveryMode=" +
-                    deliveryMode +
-                    " priority=" +
-                    priority +
-                    " ttl=" +
-                    timeToLive);
-         }
+            if (ActiveMQRATopicPublisher.trace) {
+               ActiveMQRALogger.LOGGER.trace("send " + this +
+                       " message=" +
+                       message +
+                       " deliveryMode=" +
+                       deliveryMode +
+                       " priority=" +
+                       priority +
+                       " ttl=" +
+                       timeToLive);
+            }
 
-         checkState();
+            checkState();
 
-         ((TopicPublisher) producer).publish(message, deliveryMode, priority, timeToLive);
+            ((TopicPublisher) producer).publish(message, deliveryMode, priority, timeToLive);
 
-         if (ActiveMQRATopicPublisher.trace) {
-            ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
-         }
-         return null;
-      });
+            if (ActiveMQRATopicPublisher.trace) {
+               ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
+            }
+            return null;
+         });
    }
 
    /**
@@ -106,19 +106,19 @@ public class ActiveMQRATopicPublisher extends ActiveMQRAMessageProducer implemen
    public void publish(final Message message) throws JMSException {
 
       session.supplyLocked(() -> {
-         if (ActiveMQRATopicPublisher.trace) {
-            ActiveMQRALogger.LOGGER.trace("send " + this + " message=" + message);
-         }
+            if (ActiveMQRATopicPublisher.trace) {
+               ActiveMQRALogger.LOGGER.trace("send " + this + " message=" + message);
+            }
 
-         checkState();
+            checkState();
 
-         ((TopicPublisher) producer).publish(message);
+            ((TopicPublisher) producer).publish(message);
 
-         if (ActiveMQRATopicPublisher.trace) {
-            ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
-         }
-         return null;
-      });
+            if (ActiveMQRATopicPublisher.trace) {
+               ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
+            }
+            return null;
+         });
    }
 
    /**
@@ -138,29 +138,29 @@ public class ActiveMQRATopicPublisher extends ActiveMQRAMessageProducer implemen
                        final long timeToLive) throws JMSException {
 
       session.supplyLocked(() -> {
-         if (ActiveMQRATopicPublisher.trace) {
-            ActiveMQRALogger.LOGGER.trace("send " + this +
-                    " destination=" +
-                    destination +
-                    " message=" +
-                    message +
-                    " deliveryMode=" +
-                    deliveryMode +
-                    " priority=" +
-                    priority +
-                    " ttl=" +
-                    timeToLive);
-         }
+            if (ActiveMQRATopicPublisher.trace) {
+               ActiveMQRALogger.LOGGER.trace("send " + this +
+                       " destination=" +
+                       destination +
+                       " message=" +
+                       message +
+                       " deliveryMode=" +
+                       deliveryMode +
+                       " priority=" +
+                       priority +
+                       " ttl=" +
+                       timeToLive);
+            }
 
-         checkState();
+            checkState();
 
-         ((TopicPublisher) producer).publish(destination, message, deliveryMode, priority, timeToLive);
+            ((TopicPublisher) producer).publish(destination, message, deliveryMode, priority, timeToLive);
 
-         if (ActiveMQRATopicPublisher.trace) {
-            ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
-         }
-         return null;
-      });
+            if (ActiveMQRATopicPublisher.trace) {
+               ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
+            }
+            return null;
+         });
    }
 
    /**
@@ -173,18 +173,18 @@ public class ActiveMQRATopicPublisher extends ActiveMQRAMessageProducer implemen
    public void publish(final Topic destination, final Message message) throws JMSException {
 
       session.supplyLocked(() -> {
-         if (ActiveMQRATopicPublisher.trace) {
-            ActiveMQRALogger.LOGGER.trace("send " + this + " destination=" + destination + " message=" + message);
-         }
+            if (ActiveMQRATopicPublisher.trace) {
+               ActiveMQRALogger.LOGGER.trace("send " + this + " destination=" + destination + " message=" + message);
+            }
 
-         checkState();
+            checkState();
 
-         ((TopicPublisher) producer).publish(destination, message);
+            ((TopicPublisher) producer).publish(destination, message);
 
-         if (ActiveMQRATopicPublisher.trace) {
-            ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
-         }
-         return null;
-      });
+            if (ActiveMQRATopicPublisher.trace) {
+               ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
+            }
+            return null;
+         });
    }
 }

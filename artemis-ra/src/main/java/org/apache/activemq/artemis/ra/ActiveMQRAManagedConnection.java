@@ -394,7 +394,8 @@ public final class ActiveMQRAManagedConnection implements ManagedConnection, Exc
          }
 
          return runnable.get();
-      }finally {
+      }
+      finally {
          currentLock.unlock();
          if (ActiveMQRAManagedConnection.trace) {
             ActiveMQRALogger.LOGGER.trace("unlock()");
@@ -411,7 +412,8 @@ public final class ActiveMQRAManagedConnection implements ManagedConnection, Exc
             return null;
          }
          return runnable.get();
-      }finally {
+      }
+      finally {
          currentLock.unlock();
          if (ActiveMQRAManagedConnection.trace) {
             ActiveMQRALogger.LOGGER.trace("unlock()");

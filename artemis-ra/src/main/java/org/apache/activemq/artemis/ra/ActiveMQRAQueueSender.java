@@ -75,28 +75,28 @@ public class ActiveMQRAQueueSender extends ActiveMQRAMessageProducer implements 
                     final int priority,
                     final long timeToLive) throws JMSException {
       session.supplyLocked(() -> {
-         if (ActiveMQRAQueueSender.trace) {
-            ActiveMQRALogger.LOGGER.trace("send " + this +
-                    " destination=" +
-                    destination +
-                    " message=" +
-                    message +
-                    " deliveryMode=" +
-                    deliveryMode +
-                    " priority=" +
-                    priority +
-                    " ttl=" +
-                    timeToLive);
-         }
+            if (ActiveMQRAQueueSender.trace) {
+               ActiveMQRALogger.LOGGER.trace("send " + this +
+                       " destination=" +
+                       destination +
+                       " message=" +
+                       message +
+                       " deliveryMode=" +
+                       deliveryMode +
+                       " priority=" +
+                       priority +
+                       " ttl=" +
+                       timeToLive);
+            }
 
-         checkState();
-         producer.send(destination, message, deliveryMode, priority, timeToLive);
+            checkState();
+            producer.send(destination, message, deliveryMode, priority, timeToLive);
 
-         if (ActiveMQRAQueueSender.trace) {
-            ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
-         }
-         return null;
-      });
+            if (ActiveMQRAQueueSender.trace) {
+               ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
+            }
+            return null;
+         });
    }
 
    /**
@@ -109,17 +109,17 @@ public class ActiveMQRAQueueSender extends ActiveMQRAMessageProducer implements 
    public void send(final Queue destination, final Message message) throws JMSException {
 
       session.supplyLocked(() -> {
-         if (ActiveMQRAQueueSender.trace) {
-            ActiveMQRALogger.LOGGER.trace("send " + this + " destination=" + destination + " message=" + message);
-         }
+            if (ActiveMQRAQueueSender.trace) {
+               ActiveMQRALogger.LOGGER.trace("send " + this + " destination=" + destination + " message=" + message);
+            }
 
-         checkState();
-         producer.send(destination, message);
+            checkState();
+            producer.send(destination, message);
 
-         if (ActiveMQRAQueueSender.trace) {
-            ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
-         }
-         return null;
-      });
+            if (ActiveMQRAQueueSender.trace) {
+               ActiveMQRALogger.LOGGER.trace("sent " + this + " result=" + message);
+            }
+            return null;
+         });
    }
 }
