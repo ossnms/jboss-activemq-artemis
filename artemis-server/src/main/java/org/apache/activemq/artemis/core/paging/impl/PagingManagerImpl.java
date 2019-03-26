@@ -17,7 +17,6 @@
 package org.apache.activemq.artemis.core.paging.impl;
 
 import java.nio.file.FileStore;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -170,13 +169,7 @@ public final class PagingManagerImpl implements PagingManager {
                memoryReleased();
             }
          }
-         Iterator<PagingStore> storeIterator = blockedStored.iterator();
-         while (storeIterator.hasNext()) {
-            PagingStore store = storeIterator.next();
-            if (store.checkReleasedMemory()) {
-               storeIterator.remove();
-            }
-         }
+         blockedStored.removeIf(PagingStore::checkReleasedMemory);
       }
    }
 
@@ -203,9 +196,12 @@ public final class PagingManagerImpl implements PagingManager {
 
       @Override
       public void under(FileStore store, double usage) {
+         final boolean diskFull = PagingManagerImpl.this.diskFull;
          if (diskFull || !blockedStored.isEmpty() || !memoryCallback.isEmpty()) {
-            ActiveMQServerLogger.LOGGER.diskCapacityRestored();
-            diskFull = false;
+            if (diskFull) {
+               ActiveMQServerLogger.LOGGER.diskCapacityRestored();
+               PagingManagerImpl.this.diskFull = false;
+            }
             checkMemoryRelease();
          }
       }
