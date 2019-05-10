@@ -2335,6 +2335,10 @@ public class QueueImpl extends CriticalComponentImpl implements Queue {
 
                if (status == HandleStatus.HANDLED) {
 
+                  // if a message was delivered, any previous negative attemps need to be cleared
+                  // this is to avoid breaks on the loop when checking for any other factors.
+                  noDelivery = 0;
+
                   deliveriesInTransit.countUp();
 
                   handledconsumer = consumer;
