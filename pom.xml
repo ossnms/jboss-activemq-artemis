@@ -1627,6 +1627,8 @@
                   <exclude>**/src/test/resources/keystore</exclude>
                   <exclude>**/*.log</exclude>
                   <exclude>**/*.redo</exclude>
+                  <exclude>**/server.lock</exclude>
+
 
                   <!-- NPM files -->
                   <exclude>**/node/**</exclude>
