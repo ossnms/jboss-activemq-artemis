@@ -16,22 +16,6 @@
  */
 package org.apache.activemq.artemis.core.paging.cursor.impl;
 
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.Message;
 import org.apache.activemq.artemis.core.filter.Filter;
@@ -59,7 +43,27 @@ import org.apache.activemq.artemis.utils.actors.ArtemisExecutor;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.jboss.logging.Logger;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 final class PageSubscriptionImpl implements PageSubscription {
+
+   private static final long PAGE_MAX_INACTIVITY_TIME = Long.getLong(PageSubscriptionImpl.class.getName() + ".pageMaxInactivityTime", TimeUnit.MINUTES.toMillis(15));
+   private static final long PAGE_FIX_AFTER_TIME = Long.getLong(PageSubscriptionImpl.class.getName() + ".pageFixAfterTime", TimeUnit.HOURS.toMillis(12));
 
    private static final Logger logger = Logger.getLogger(PageSubscriptionImpl.class);
 
@@ -903,6 +907,25 @@ final class PageSubscriptionImpl implements PageSubscription {
 
    // Inner classes -------------------------------------------------
 
+   private static final class PageCursorMessageInfo {
+      private final long messageId;
+      private final long transactionId;
+
+      @Override
+      public String toString() {
+         return "PageCursorMessageInfo{" +
+                 "messageId=" + messageId +
+                 ", transactionId=" + transactionId +
+                 '}';
+      }
+
+      private PageCursorMessageInfo(long messageId, long transactionId) {
+         this.messageId = messageId;
+         this.transactionId = transactionId;
+
+
+      }
+   }
    /**
     * This will hold information about the pending ACKs towards a page.
     * <p>
@@ -943,6 +966,11 @@ final class PageSubscriptionImpl implements PageSubscription {
       // expressions
       private final AtomicInteger confirmed = new AtomicInteger(0);
 
+      private final AtomicLong lastModified = new AtomicLong(System.currentTimeMillis());
+
+      private final PageCursorMessageInfo[] pageCursorMessageInfos;
+
+
       public boolean isAck(PagePosition position) {
          return completePage != null || acks.contains(position);
       }
@@ -975,10 +1003,40 @@ final class PageSubscriptionImpl implements PageSubscription {
          this.numberOfMessages = numberOfMessages;
          if (cache != null) {
             wasLive = cache.isLive();
+            if (!wasLive) {
+               pageCursorMessageInfos = fillPageCursorMessageInfos(cache);
+            } else {
+               pageCursorMessageInfos = null;
+            }
             this.cache = new WeakReference<>(cache);
          } else {
+            pageCursorMessageInfos = null;
             wasLive = false;
          }
+      }
+
+      private PageCursorMessageInfo[] fillPageCursorMessageInfos(PageCache cache) {
+         final PagedMessage[] messages = cache.getMessages();
+         PageCursorMessageInfo[] infos = new PageCursorMessageInfo[messages.length];
+         for (int i = 0; i < messages.length; i++) {
+            infos[i] = new PageCursorMessageInfo(messages[i].getMessage().getMessageID(), messages[i].getTransactionID());
+         }
+         return infos;
+      }
+
+      private PageCursorMessageInfo[] getPageCursorMessageInfos() {
+         if (wasLive) {
+            // if the page was live at any point, we need to
+            // get the number of messages from the page-cache
+            PageCache localcache = this.cache.get();
+            if (localcache == null) {
+               localcache = cursorProvider.getPageCache(pageId);
+               this.cache = new WeakReference<>(localcache);
+            }
+
+            return fillPageCursorMessageInfos(localcache);
+         }
+         return pageCursorMessageInfos;
       }
 
       /**
@@ -998,7 +1056,37 @@ final class PageSubscriptionImpl implements PageSubscription {
             logger.trace(PageSubscriptionImpl.this + "::PageCursorInfo(" + pageId + ")::isDone checking with completePage!=null->" + (completePage != null) + " getNumberOfMessages=" + getNumberOfMessages() + ", confirmed=" + confirmed.get() + " and pendingTX=" + pendingTX.get());
 
          }
-         return completePage != null || (getNumberOfMessages() == confirmed.get() && pendingTX.get() == 0);
+         final boolean done = completePage != null || (getNumberOfMessages() == confirmed.get() && pendingTX.get() == 0);
+
+         checkForInactivity(done);
+
+         return done;
+      }
+
+      private void checkForInactivity(boolean done) {
+         final long inactivityTime = System.currentTimeMillis() - lastModified.get();
+         if (!done && inactivityTime >= PAGE_MAX_INACTIVITY_TIME) {
+            logger.warn(pageStore.getAddress() + ". Max inactivity time reached for page " + pageId + " at " + pageStore.getAddress() + ". completePage!=null->" + (completePage != null) + " getNumberOfMessages=" + getNumberOfMessages() + ", confirmed=" + confirmed.get() + ", pendingTX=" + pendingTX.get() + ", acks=" + acks.size() + "and removedReferences=" + removedReferences.size());
+            final HashSet<PagePosition> currentAcks = new HashSet<>(acks);
+            final PageCursorMessageInfo[] messageInfos = getPageCursorMessageInfos();
+
+            Set<PagePosition> missingAcks = new HashSet<>();
+            if (messageInfos != null) {
+               for (int i = 0; i < messageInfos.length; i++) {
+                  final PagePositionImpl pagePos = new PagePositionImpl(pageId, i);
+                  if (!currentAcks.contains(pagePos)) {
+                     logger.warn(pageStore.getAddress() + ". Missing ack for " + pagePos + ". " + messageInfos[i]);
+                     missingAcks.add(pagePos);
+                  }
+               }
+            }
+
+            if (inactivityTime >= PAGE_FIX_AFTER_TIME) {
+               logger.warn(pageStore.getAddress() + ". Page inactive too long. Trying to fix it");
+               missingAcks.forEach(PageSubscriptionImpl.this::positionIgnored);
+            }
+
+         }
       }
 
       public boolean isPendingDelete() {
@@ -1017,10 +1105,16 @@ final class PageSubscriptionImpl implements PageSubscription {
       }
 
       public void incrementPendingTX() {
+         markChange();
          pendingTX.incrementAndGet();
       }
 
+      private void markChange() {
+         lastModified.set(System.currentTimeMillis());
+      }
+
       public void decrementPendingTX() {
+         markChange();
          pendingTX.decrementAndGet();
          checkDone();
       }
@@ -1031,6 +1125,7 @@ final class PageSubscriptionImpl implements PageSubscription {
 
       public void remove(final PagePosition position) {
          removedReferences.add(position);
+         markChange();
       }
 
       public void addACK(final PagePosition posACK) {
@@ -1052,6 +1147,7 @@ final class PageSubscriptionImpl implements PageSubscription {
 
          // Negative could mean a bookmark on the first element for the page (example -1)
          if (added && posACK.getMessageNr() >= 0) {
+            markChange();
             confirmed.incrementAndGet();
             checkDone();
          }
@@ -1060,11 +1156,13 @@ final class PageSubscriptionImpl implements PageSubscription {
       // To be called during reload
       public void loadACK(final PagePosition posACK) {
          if (internalAddACK(posACK) && posACK.getMessageNr() >= 0) {
+            markChange();
             confirmed.incrementAndGet();
          }
       }
 
       private boolean internalAddACK(final PagePosition posACK) {
+         markChange();
          removedReferences.add(posACK);
          return acks.add(posACK);
       }

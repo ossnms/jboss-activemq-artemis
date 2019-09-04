@@ -699,7 +699,7 @@ public class ServerConsumerImpl implements ServerConsumer, ReadyListener {
 
    private boolean lockDelivery() {
       try {
-         if (!lockDelivery.writeLock().tryLock(30, TimeUnit.SECONDS)) {
+         if (!lockDelivery.writeLock().tryLock(5, TimeUnit.MINUTES)) {
             ActiveMQServerLogger.LOGGER.timeoutLockingConsumer();
             if (server != null) {
                server.threadDump();
