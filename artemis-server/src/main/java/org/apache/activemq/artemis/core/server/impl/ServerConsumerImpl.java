@@ -1000,6 +1000,29 @@ public class ServerConsumerImpl implements ServerConsumer, ReadyListener {
       deliveringRefs.addFirst(reference);
    }
 
+   private Message getMessageOrNull(MessageReference reference) {
+      try {
+         return reference.getMessage();
+      } catch (RuntimeException e) {
+         return null;
+      }
+   }
+
+   private void cleanDeliveringRefs() {
+      MessageReference peek = null;
+      do {
+         peek = deliveringRefs.peek();
+         if (peek != null) {
+            if (getMessageOrNull(peek) == null) {
+               deliveringRefs.remove(peek);
+            } else {
+               break;
+            }
+         }
+      }
+      while (peek != null);
+   }
+
    @Override
    public synchronized MessageReference removeReferenceByID(final long messageID) throws Exception {
       if (browseOnly) {
@@ -1014,6 +1037,8 @@ public class ServerConsumerImpl implements ServerConsumer, ReadyListener {
          if (deliveringRefs.isEmpty()) {
             return null;
          }
+
+         cleanDeliveringRefs();
 
          if (deliveringRefs.peek().getMessage().getMessageID() == messageID) {
             return deliveringRefs.poll();
